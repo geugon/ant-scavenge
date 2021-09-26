@@ -40,6 +40,12 @@ class Board():
     """
     def __init__(self, shape):
         self.shape = Point.cast(shape)
+        self.mound_center = None
+        self.mound = np.zeros(self.shape)
+        self.ants = np.zeros(self.shape)
+        self.food = np.zeros(self.shape)
+        self.walls = np.zeros(self.shape)
+
         self.generate_mound_and_ants()
         self.generate_food()
         self.generate_walls()
@@ -52,25 +58,19 @@ class Board():
         Ants occupy spaces adjacent to mound
         """
 
-        # Select mound center
+        # Place mound
         x = np.random.randint(4, self.shape.x-4)
         y = np.random.randint(4, self.shape.y-4)
         self.mound_center = Point(x,y)
-
-        # Place mound
-        self.mound = []
-        for i in range(3):
-            for j in range(3):
-                    self.mound.append(Point(x-1+i, y-1+j))
+        self.mound[x-1:x+2, y-1:y+2] = 1
 
         # Place ants
-        self.ants = []
         for i in range(5):
             for j in range(5):
                 if i in [0,4] and j in [0,4]:
                     pass # ignore corners
                 elif i in [0,4] or j in [0,4]:
-                    self.ants.append(Point(x-2+i, y-2+j))
+                    self.ants[Point(x-2+i, y-2+j)] = 1
 
     def generate_food(self):
         """
@@ -79,27 +79,17 @@ class Board():
         All open have a 2% of having food, ignorning edge (walled later)
         """        
 
-        # Select food center
+        # Select main food center
         while True:
             x = np.random.randint(4, self.shape.x-4)
             y = np.random.randint(4, self.shape.y-4)
             distVec = self.mound_center.absDistVec((x,y))
             if distVec[0]>6 and distVec[1]>6:
                 break
-
-        # Place main food 5x5
-        self.food = []
-        for i in range(5):
-            for j in range(5):
-                    self.food.append(Point(x-2+i, y-2+j))
+        self.food[x-2:x+3, y-2:y+3] = 1
 
         # Place random other food
-        for i, j in zip(*np.where(np.random.random(self.shape-2) < 0.02)):
-            p = Point(i,j)+1
-            if (p not in self.mound and 
-                p not in self.ants and
-                p not in self.food):
-                self.food.append(p)
+        self.food = np.logical_or(self.food, self.select_random_open(0.02))
 
     def generate_walls(self):
         """
@@ -109,34 +99,37 @@ class Board():
         """        
 
         # Place outer walls
-        self.walls = []
-        for x in range(self.shape.x):
-            self.walls.append(Point(x, 0))
-            self.walls.append(Point(x, self.shape.y-1))
-        for y in range(1,self.shape.y-1):
-            self.walls.append(Point(0, y))
-            self.walls.append(Point(self.shape.x-1, y))
+        new_walls = np.ones(self.shape, dtype=bool)
+        new_walls[1:-1,1:-1] = self.walls[1:-1,1:-1]
+        self.walls = new_walls
 
-        # Place random other food
-        for i, j in zip(*np.where(np.random.random(self.shape-2) < 0.30)):
-            p = Point(i,j)+1
-            if (p not in self.mound and 
-                p not in self.ants and
-                p not in self.food):
-                self.walls.append(p)
+        # Place random other walls
+        self.walls = np.logical_or(self.walls, self.select_random_open(0.3))
 
     def as_numpy(self):
-        output = np.array([' ']*self.shape.x*self.shape.y).reshape(self.shape)
-        for p in self.walls:
-            output[p] = 'w'
-        for p in self.food:
-            output[p] = 'f'
-        for p in self.mound:
-            output[p] = 'm'
-        for p in self.ants:
-            output[p] = 'a'
-        return output.T
+        output = np.zeros(self.shape)
+        output += 1*self.walls
+        output += 2*self.food
+        output += 3*self.ants
+        output += 4*self.mound
+        labels = {0: ' ',
+                  1: 'w',
+                  2: 'f',
+                  3: 'a',
+                  4: 'm',
+                  }
+        return np.vectorize(lambda x: labels[x])(output.astype(int)).T
 
+    def select_random_open(self, frac, include_edge=False):
+        if include_edge:
+            selection = np.random.random(self.shape-2) < frac
+        else:
+            selection = np.zeros(self.shape, dtype=bool)
+            selection[1:-1,1:-1] = np.random.random(self.shape-2) < frac
+        return np.logical_and(selection, np.logical_not(self.occupied()))
+
+    def occupied(self):
+        return np.logical_or.reduce((self.walls, self.food, self.ants, self.mound))
 
 if __name__ == "__main__":
     print("debug test only")
