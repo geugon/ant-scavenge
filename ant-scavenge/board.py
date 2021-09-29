@@ -34,21 +34,31 @@ class Point(namedtuple('Point', ['x', 'y'])):
         return Point(other[0], other[1])
 
 
-class Board():
-    """
-    Stores location of everything in the environment.
-    """
-    def __init__(self, shape):
-        self.shape = Point.cast(shape)
-        self.mound_center = None
-        self.mound = np.zeros(self.shape)
-        self.ants = np.zeros(self.shape)
-        self.food = np.zeros(self.shape)
-        self.walls = np.zeros(self.shape)
+class BoardFactory():
 
+    def build(self, shape):
+        self.shape = Point.cast(shape)
+        self.reset()
         self.generate_mound_and_ants()
         self.generate_food()
         self.generate_walls()
+
+        packed = {
+                  'ants':  self.ants,
+                  'food':  self.food,
+                  'mound': self.mound,
+                  'walls': self.walls,
+                  }
+
+        print(self.shape)
+        return Board(self.shape, data=packed)  
+
+    def reset(self):
+        self.ants  = np.zeros(self.shape)
+        self.food  = np.zeros(self.shape)
+        self.mound = np.zeros(self.shape)
+        self.walls = np.zeros(self.shape)
+        self.mound_center = None
 
     def generate_mound_and_ants(self):
         """
@@ -106,19 +116,8 @@ class Board():
         # Place random other walls
         self.walls = np.logical_or(self.walls, self.select_random_open(0.3))
 
-    def as_numpy(self):
-        output = np.zeros(self.shape)
-        output += 1*self.walls
-        output += 2*self.food
-        output += 3*self.ants
-        output += 4*self.mound
-        labels = {0: ' ',
-                  1: 'w',
-                  2: 'f',
-                  3: 'a',
-                  4: 'm',
-                  }
-        return np.vectorize(lambda x: labels[x])(output.astype(int)).T
+    def occupied(self):
+        return np.logical_or.reduce((self.walls, self.food, self.ants, self.mound))
 
     def select_random_open(self, frac, include_edge=False):
         if include_edge:
@@ -128,12 +127,47 @@ class Board():
             selection[1:-1,1:-1] = np.random.random(self.shape-2) < frac
         return np.logical_and(selection, np.logical_not(self.occupied()))
 
-    def occupied(self):
-        return np.logical_or.reduce((self.walls, self.food, self.ants, self.mound))
+
+class Board():
+    """
+    Stores location of everything in the environment.
+    """
+    def __init__(self, shape, data=None):
+        self.shape = Point.cast(shape)
+        if data is None:
+            self.data = {}
+        else:
+            self.data = data
+
+    @classmethod
+    def from_board(cls, board_instance):
+        shape = board_instance.shape
+        data = copy.deepcopy(board_instance.data)
+        return cls(shape, data=data)
+
+    def as_numpy(self):
+        output = np.zeros(self.shape)
+        output += 1*self.data['walls']
+        output += 2*self.data['food']
+        output += 3*self.data['ants']
+        output += 4*self.data['mound']
+        labels = {0: ' ',
+                  1: 'w',
+                  2: 'f',
+                  3: 'a',
+                  4: 'm',
+                  }
+        return np.vectorize(lambda x: labels[x])(output.astype(int)).T
+
 
 if __name__ == "__main__":
     print("debug test only")
-    board = Board((25,25))
+    bf = BoardFactory()
+    board = bf.build((25,25))
     text_vis = board.as_numpy()
+    for row in text_vis:
+        print(''.join(row))
+    board_copied = Board.from_board(board)
+    text_vis = board_copied.as_numpy()
     for row in text_vis:
         print(''.join(row))
