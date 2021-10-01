@@ -1,3 +1,6 @@
+"""
+Representation for game board
+"""
 from collections import namedtuple
 import numpy as np
 import copy
@@ -6,7 +9,7 @@ import copy
 class Point(namedtuple('Point', ['x', 'y'])):
     def __add__(self, other):
         # not a collection, attempt to use as scalar
-        if not hasattr(other, 'len'):
+        if not hasattr(other, '__len__'):
             return Point(self.x + other, self.y + other)
 
         # some type of binary collection, assume it is Point-like:
@@ -17,7 +20,7 @@ class Point(namedtuple('Point', ['x', 'y'])):
 
     def __sub__(self, other):
         # not a collection, attempt to use as scalar
-        if not hasattr(other, 'len'):
+        if not hasattr(other, '__len__'):
             return Point(self.x - other, self.y - other)
 
         # some type of binary collection, assume it is Point-like:
@@ -26,8 +29,19 @@ class Point(namedtuple('Point', ['x', 'y'])):
 
         raise TypeError(f"unsupported type for Point subtracion, use scalar or two-element collections, not {type(other)}")
 
+    def __mul__(self, other):
+        # not a collection, attempt to use as scalar
+        if not hasattr(other, '__len__'):
+            return Point(self.x * other, self.y * other)
+
+        # some type of binary collection, assume it is Point-like:
+        if len(other)==2: 
+            return Point(self.x * other[0], self.y * other[1])
+
+        raise TypeError(f"unsupported type for Point multiplication, use scalar or two-element collections, not {type(other)}")
+
     def absDistVec(self, other):
-        return np.abs(self.x-other[0]), np.abs(self.x-other[0])
+        return np.abs(self.x-other[0]), np.abs(self.y-other[1])
 
     @classmethod
     def cast(cls, other):
