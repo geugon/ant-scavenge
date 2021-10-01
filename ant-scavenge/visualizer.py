@@ -1,17 +1,34 @@
 """
 Creates graphical interface to visualize simulation
 """
-
 import pygame
 from board import BoardFactory
 from board import Point
+import numpy as np
+
 
 colors = {'white-ish':  (230,230,230),
-          'black':      (0,0,0)}
+          'black':      (0,0,0),
+          'dark grey':  (60,60,60)}
+
+
+class Wall(pygame.sprite.Sprite):
+    def __init__(self, size, pos, imgFile=None):
+        super().__init__()
+        
+        if imgFile:
+            self.image = pygame.image.load(imgFile).convert_alpha()
+        else:
+            self.image = pygame.Surface(size)
+            self.image.fill(colors['dark grey'])
+
+        self.rect = self.image.get_rect()
+        self.rect = pos
+
 
 class Visualizer():
     _boarder_size = 2
-    _voxel_size = 20
+    _voxel_size = 20 # includes one-sided boarder
     _right_space = 200
 
     def __init__(self, shape):
@@ -19,6 +36,7 @@ class Visualizer():
         # Sizes of board area, not full image
         self.x_size = self._boarder_size + shape.x*self._voxel_size
         self.y_size = self._boarder_size + shape.y*self._voxel_size 
+        self.piece_size = Point(self._voxel_size-self._boarder_size, self._voxel_size-self._boarder_size)
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.x_size + self._right_space, self.y_size))
@@ -43,18 +61,27 @@ class Visualizer():
     def show(self, board):
         self.screen.blit(self.background, (0,0))
 
+        walls = pygame.sprite.Group()
+        for wall_coord in np.asarray(np.where(board.data['walls'])).T:
+            pos = Point.cast(wall_coord)
+            pos = Point.cast(wall_coord)*self._voxel_size + self._boarder_size
+            walls.add(Wall(self.piece_size, pos))
+        walls.draw(self.screen)
+ 
         pygame.display.update()
+        pygame.time.delay(4000)
 
     def close(self):
-        pygame.time.delay(10000)
         pygame.quit()
 
 
 
 if __name__=="__main__":
     bf = BoardFactory()
-    board = bf.build((25,25))
+    board1 = bf.build((25,25))
+    board2 = bf.build((25,25))
 
-    vis = Visualizer(board.shape)
-    vis.show(board)
+    vis = Visualizer(board1.shape)
+    vis.show(board1)
+    vis.show(board2)
     vis.close()
