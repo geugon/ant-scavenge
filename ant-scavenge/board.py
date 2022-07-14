@@ -64,7 +64,6 @@ class BoardFactory():
                   'walls': self.walls,
                   }
 
-        print(self.shape)
         return Board(self.shape, data=packed)  
 
     def reset(self):
@@ -135,7 +134,7 @@ class BoardFactory():
 
     def select_random_open(self, frac, include_edge=False):
         if include_edge:
-            selection = np.random.random(self.shape-2) < frac
+            selection = np.random.random(self.shape) < frac
         else:
             selection = np.zeros(self.shape, dtype=bool)
             selection[1:-1,1:-1] = np.random.random(self.shape-2) < frac
@@ -145,6 +144,8 @@ class BoardFactory():
 class Board():
     """
     Stores location of everything in the environment.
+
+    Thin wrapper for dictionary of 2D numpy arrays
     """
     def __init__(self, shape, data=None):
         self.shape = Point.cast(shape)
@@ -170,6 +171,7 @@ class Board():
                   2: 'f',
                   3: 'a',
                   4: 'm',
+                  7: '@', #ant on mound
                   }
         return np.vectorize(lambda x: labels[x])(output.astype(int)).T
 
@@ -185,3 +187,4 @@ if __name__ == "__main__":
     text_vis = board_copied.as_numpy()
     for row in text_vis:
         print(''.join(row))
+

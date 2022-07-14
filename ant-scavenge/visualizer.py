@@ -30,19 +30,19 @@ class Piece(pygame.sprite.Sprite):
         self.rect = pos
 
 
-class Wall(Piece):
+class WallSprite(Piece):
     _color = colors['dark grey']
 
 
-class Mound(Piece):
+class MoundSprite(Piece):
     _color = colors['dark red']
 
 
-class Ant(Piece):
+class AntSprite(Piece):
     _color = colors['red']
 
 
-class Food(Piece):
+class FoodSprite(Piece):
     _color = colors['green']
 
 
@@ -50,10 +50,10 @@ class SpriteManager():
     """
     Builds and Stores Sprites
     """
-    _class_lookup = {'walls': Wall,
-                     'ants': Ant,
-                     'food': Food,
-                     'mound': Mound,
+    _class_lookup = {'walls': WallSprite,
+                     'ants': AntSprite,
+                     'food': FoodSprite,
+                     'mound': MoundSprite,
                     }
 
     def __init__(self, _voxel_size, _boarder_size):
