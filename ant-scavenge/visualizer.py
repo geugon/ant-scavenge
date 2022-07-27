@@ -80,7 +80,7 @@ class SpriteManager():
         return self.sprites
 
     def _build_group(self, name, data):
-        if np.array_equal(self.src_data[name], data):
+        if self.src_data[name].shape and (self.src_data[name] == data).all():
             return #no change
 
         group = pygame.sprite.Group()
@@ -89,7 +89,7 @@ class SpriteManager():
             group.add(self._class_lookup[name](self.piece_size, pos))
 
         self.sprites[name] = group
-        self.src_data[name] = data
+        self.src_data[name] = data.copy()
 
 
 class Visualizer():
@@ -133,7 +133,7 @@ class Visualizer():
             group.draw(self.screen)
  
         pygame.display.update()
-        pygame.time.delay(4000)
+        pygame.time.delay(1000)
 
     def close(self):
         pygame.quit()

@@ -160,6 +160,9 @@ class Board():
         data = copy.deepcopy(board_instance.data)
         return cls(shape, data=data)
 
+    def copy(self):
+        return self.from_board(self)
+
     def as_numpy(self):
         output = np.zeros(self.shape)
         output += 1*self.data['walls']
