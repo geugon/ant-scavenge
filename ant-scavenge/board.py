@@ -178,6 +178,45 @@ class Board():
                   }
         return np.vectorize(lambda x: labels[x])(output.astype(int)).T
 
+    def get_views(self, centers):
+        """
+        return 5x5 views from centers
+        corners and areas behind walls are hidden
+        """
+        data = np.asarray([self.data[k] for k in ['walls', 'food', 'ants', 'mound']])
+        view_all = np.zeros((data.shape[0]+1,  #+1 to add hidden
+                             data.shape[1]+2,
+                             data.shape[2]+2))
+        view_all[:-1,1:-1,1:-1] = data
+
+        views = []
+        blockables = {
+                (1,1): [(0,1), (1,0)],
+                (2,1): [(2,0)],
+                (3,1): [(3,0), (4,1)],
+                (3,2): [(4,2)],
+                (3,3): [(4,3), (3,4)],
+                (2,3): [(2,4)],
+                (1,3): [(1,4), (0,3)],
+                (1,2): [(0,2)],
+                }
+
+        for pos in centers:
+            # slice local view
+            view = view_all[:,pos[0]-2+1:pos[0]+3+1, (pos[1]-2+1):(pos[1]+3+1)].copy()
+
+            # hide as needed
+            to_hide = [(0,0), (-1,0), (-1,-1), (0,-1)] # always hide corners 
+            for (x,y), blocked in blockables.items():
+                if view[0, x, y]: to_hide.extend(blocked)
+            for x,y in to_hide:
+                view[ :,x,y] = 0
+                view[-1,x,y] = 1
+
+            views.append(view)
+       
+        return views
+
 
 if __name__ == "__main__":
     print("debug test only")
